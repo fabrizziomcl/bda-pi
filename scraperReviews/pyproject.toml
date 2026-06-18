@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bda-reviewsscraper"
 version = "1.1.0"
-description = "Phase 2 of the BDA gastronomic pipeline: async Playwright extraction of Google Maps reviews."
+description = "Fase 2 BDA pipeline."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
