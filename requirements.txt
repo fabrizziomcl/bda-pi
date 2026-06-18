@@ -1,0 +1,23 @@
+# =============================================================================
+# bda-pi — Dependencias generales del proyecto
+# Instalar con: pip install -r requirements.txt
+# (Cada submódulo conserva además su propio requirements.txt específico.)
+# =============================================================================
+
+# --- Fase 1: scraperRestaurants (ingesta de locales) ---
+aiohttp>=3.9.0
+tqdm>=4.67.0
+pyarrow>=15.0.0
+
+# --- Fase 2: scraperReviews (ingesta de reseñas) ---
+playwright==1.50.0
+polars>=0.20.0
+
+# --- Procesamiento / ETL / Notebooks ---
+pandas>=2.0
+numpy>=1.24
+
+# --- Streaming en tiempo real (kafka/) ---
+kafka-python>=2.0.2
+python-dotenv>=1.0.0
+pyspark>=3.5   # en Databricks lo provee el runtime; instalar solo para Spark local
