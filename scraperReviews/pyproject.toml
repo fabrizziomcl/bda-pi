@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bda-reviewsscraper"
+version = "1.1.0"
+description = "Phase 2 of the BDA gastronomic pipeline: async Playwright extraction of Google Maps reviews."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "BDA team" }]
+dependencies = [
+    "playwright==1.50.0",
+    "tqdm>=4.66.0",
+    "polars>=0.20.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+    "black>=24",
+    "mypy>=1.10",
+]
+
+[project.scripts]
+bda-reviews-scrape  = "orchestrator:main"
+bda-reviews-monitor = "monitor:main"
+bda-reviews-etl     = "etl.pipeline:main"
+bda-reviews-bench   = "utils.benchmark_workers:main"
+
+[tool.setuptools]
+py-modules = ["orchestrator", "worker", "googlemaps", "monitor", "logging_utils"]
+packages = ["config", "etl", "utils"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+extend-exclude = ["data", "data_parquet", "data_gh"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",
+    "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+extend-exclude = "data|data_parquet|data_gh"
+
+[tool.mypy]
+python_version = "3.9"
+strict_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+ignore_missing_imports = true
+exclude = ["data/", "data_parquet/", "data_gh/"]

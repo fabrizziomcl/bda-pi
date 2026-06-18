@@ -1,0 +1,24 @@
+{
+  "_comment": "Synthetic fixture mimicking the shape of Google's tbm=map JSON payload AFTER the )]}' XSSI prefix is stripped. Indices below 64 are stubbed to None to keep the file readable; we only populate the offsets the extractor actually reads. Update this fixture when adapting to a new Google response shape and re-run tests/test_extractor_shape.py.",
+  "_shape": "data is a list of >=65 elements; data[64] is the results array; each entry is [None, <place-list>]; place-list has ~260 slots.",
+  "data": null,
+  "fixtures": [
+    {
+      "label": "happy_path_full",
+      "expected_place": {
+        "id": "ChIJN1t_tDeuEmsRUsoyG83frY4",
+        "title": "Test Restaurant",
+        "category": "Pizzería",
+        "address": "Av. Test 123, Lima 15001",
+        "stars": 4.5,
+        "url_place": "https://www.google.com/maps/place/?q=place_id:ChIJN1t_tDeuEmsRUsoyG83frY4",
+        "domain": "test.com",
+        "url": "https://test.com",
+        "coor": "-12.0464,-77.0428",
+        "phoneNumber": "(01) 555-0100",
+        "completePhoneNumber": "+51 1 555-0100",
+        "source_query": "test query"
+      }
+    }
+  ]
+}

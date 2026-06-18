@@ -1,0 +1,7 @@
+# Core Scraping & Orchestration
+aiohttp>=3.9.0
+tqdm>=4.67.0
+
+# ETL Pipeline (Deduplication & Parquet compression)
+polars>=0.20.0
+pyarrow>=15.0.0

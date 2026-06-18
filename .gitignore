@@ -1,0 +1,20 @@
+# Ignore CSV files
+*.csv
+*.parquet
+
+# Ignore caches and parquet files inside scrapers
+# scraperRestaurants
+scraperRestaurants/__pycache__/
+scraperRestaurants/**/__pycache__/
+scraperRestaurants/cache/
+scraperRestaurants/**/cache/
+scraperRestaurants/**/*.parquet
+scraperRestaurants/**/*.csv
+
+# scraperReviews
+scraperReviews/__pycache__/
+scraperReviews/**/__pycache__/
+scraperReviews/cache/
+scraperReviews/**/cache/
+scraperReviews/**/*.parquet
+scraperReviews/**/*.csv
