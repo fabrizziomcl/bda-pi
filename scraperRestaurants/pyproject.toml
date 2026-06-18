@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bda-mapscraper"
 version = "1.1.0"
-description = "Phase 1 of the BDA gastronomic pipeline: country-wide Google Maps place ingestion via tbm=map."
+description = "Fase 1 BDA  pipeline."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
@@ -55,12 +55,12 @@ select = [
     "SIM", # flake8-simplify
 ]
 ignore = [
-    "E501",  # line length is enforced by black
-    "B008",  # function call in argument defaults — used by argparse Path()
+    "E501",
+    "B008",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["B011"]   # asserts in tests are fine
+"tests/*" = ["B011"]
 
 [tool.black]
 line-length = 100
