@@ -1,0 +1,19 @@
+Código e Informe.
+Puntaje: 10/18
+Exposición:
+Puntaje: 1/2
+Nota: 11
+Comentarios:
+•	La entrega de código debe reflejar lo que tengan en el repositorio.
+•	El resumen, se entrega al final del proyecto con todo completo, dado que ahora tienen resultados o avances preliminares.
+•	Revisar formato IEEE los autores van en columnas. 
+•	Medallion no es una arquitectura.
+•	Revisar todo el grupo lo que cada uno presente en las diapositivas (validación cruzada).
+•	No se evidencia uso de databricks.
+•	Todo el análisis pesado de BDA_entrega_parcial.ipynb —limpieza, NLP, clustering, LDA, mapas— se hace en pandas/scikit-learn, no en Spark. El medallón está implementado solo para las reseñas y desconectado del flujo analítico real. O ajustan el discurso del informe a lo que hicieron, o migran el procesamiento a Spark de verdad.
+•	La capa Gold no corresponde a lo que dice el informe. La Sección III describe una Gold con "estadísticas por distrito, recuentos de categorías y matrices dispersas para ML". En el código, la Gold es simplemente Silver + una columna sentimiento particionada. No hay agregación ni features para los modelos.
+•	No se encontraron los datos (tanto leídos o exportados), para determinar si cumple con la volumetría de datos.
+•	Código duplicado y desordenado. process_pipeline está definida dos veces en el mismo notebook (la segunda redefine a la primera). Hay rutas hardcodeadas a /content/, se recomienda usar path de os.
+•	El informe dice que aplicaron lematización con NLTK, pero el código usa SnowballStemmer (stemming, no lematización: son cosas distintas).
+•	Nombrar/interpretar los tópicos más allá de listar términos, y conectar la segmentación de usuarios con algo accionable.
+•	Agregar gráfico de arquitectura de componentes lógicos y tecnológicos.
