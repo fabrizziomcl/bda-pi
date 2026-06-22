@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BDA-PI · Presentación</title>
+<style>
+  :root{
+    --bg:#0e1726; --panel:#152136; --panel2:#1b2942; --ink:#eaf0fb; --muted:#9fb3d1;
+    --blue:#3b82f6; --green:#22c55e; --orange:#f59e0b; --violet:#a78bfa; --red:#f87171;
+    --line:#26344f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;overflow:hidden}
+  .deck{height:100vh;width:100vw;position:relative}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;
+    padding:4.5vh 6vw 6vh;animation:fade .3s ease}
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .eyebrow{color:var(--muted);font-weight:600;font-size:.8rem;text-transform:uppercase;
+    letter-spacing:2px;margin-bottom:.5em;display:flex;align-items:center;gap:.6em}
+  .badge{background:var(--blue);color:#fff;border-radius:6px;padding:.15em .55em;font-size:.78rem;font-weight:700}
+  h1{font-size:clamp(1.7rem,4vw,3rem);line-height:1.12;letter-spacing:-.5px}
+  h2{font-size:clamp(1.3rem,2.7vw,2rem);margin-bottom:.5em;color:#fff;
+     border-left:5px solid var(--blue);padding-left:.5em}
+  p{color:var(--muted);font-size:clamp(.95rem,1.45vw,1.18rem);line-height:1.5;max-width:64ch}
+  ul{list-style:none;display:flex;flex-direction:column;gap:.55em;margin-top:.2em}
+  li{position:relative;padding-left:1.4em;font-size:clamp(.95rem,1.5vw,1.2rem);line-height:1.38;color:var(--ink)}
+  li::before{content:"▸";position:absolute;left:0;color:var(--blue)}
+  li small{display:block;color:var(--muted);font-size:.8em;margin-top:.1em}
+  b,strong{color:#fff}
+  code{background:#0b1322;border:1px solid var(--line);border-radius:5px;padding:.05em .4em;
+    font-family:ui-monospace,Consolas,monospace;font-size:.9em;color:#cfe0ff}
+  .accent{color:var(--blue)} .ok{color:var(--green)} .warn{color:var(--orange)} .vio{color:var(--violet)} .bad{color:var(--red)}
+  .center{align-items:center;justify-content:center;text-align:center}
+  .grid{display:grid;gap:1em;margin-top:.4em}
+  .g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:1em 1.1em}
+  .card h4{color:#fff;font-size:1.02rem;margin-bottom:.3em}
+  .card p{font-size:.92rem}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:.9em;text-align:center}
+  .kpi .num{font-size:clamp(1.4rem,3.2vw,2.4rem);font-weight:800;color:var(--blue);line-height:1}
+  .kpi .lbl{color:var(--muted);font-size:.82rem;margin-top:.35em}
+  .row{display:flex;gap:2vw;align-items:center;flex:1;min-height:0}
+  .row>div{flex:1;min-width:0}.row>figure{flex:1.1;min-width:0}
+  figure{display:flex;flex-direction:column;min-height:0;margin-top:.4em}
+  .fill{flex:1}
+  figure img{max-width:100%;max-height:100%;object-fit:contain;border-radius:9px;background:#fff;padding:5px}
+  figcaption{color:var(--muted);font-size:.82rem;text-align:center;margin-top:.45em}
+  figcaption b{color:var(--blue)}
+  table{border-collapse:collapse;width:100%;margin-top:.4em;font-size:clamp(.72rem,1.15vw,1rem)}
+  th,td{border-bottom:1px solid var(--line);padding:.42em .55em;text-align:left}
+  th{color:var(--blue);font-size:.78em;text-transform:uppercase;letter-spacing:1px}
+  td b{color:#fff} .num-c{text-align:right;font-variant-numeric:tabular-nums}
+  .tag{display:inline-block;background:#1d2c46;border:1px solid var(--line);color:var(--muted);
+    border-radius:999px;padding:.22em .75em;font-size:.8rem;margin:.18em .3em .18em 0}
+  .authors{color:var(--muted);font-size:1.02rem;margin-top:1.3em;line-height:1.8}
+  .quote{border-left:3px solid var(--violet);padding-left:1em;color:var(--ink);font-style:italic;margin-top:.8em}
+  .refs{font-size:.9rem;color:var(--muted);line-height:1.5;counter-reset:r}
+  .refs li{padding-left:2.2em;margin-bottom:.35em}
+  .refs li::before{counter-increment:r;content:"["counter(r)"]";color:var(--muted)}
+  .footer{position:absolute;bottom:1.8vh;left:6vw;right:6vw;display:flex;justify-content:space-between;
+    color:#5d6f8f;font-size:.78rem;border-top:1px solid var(--line);padding-top:.5em}
+  .bar{position:fixed;top:0;left:0;height:3px;background:var(--blue);transition:width .3s;z-index:10}
+  .hint{position:fixed;bottom:8px;right:12px;color:#3f4d68;font-size:.7rem;z-index:10}
+  .lead{font-size:clamp(1.05rem,1.7vw,1.45rem);color:var(--ink);max-width:none}
+  .two{columns:2;column-gap:2.5em}.two li{break-inside:avoid;margin-bottom:.55em}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<div class="deck" id="deck">
+
+  <!-- 1 PORTADA -->
+  <section class="slide active center">
+    <div class="eyebrow">Universidad del Pacífico · Curso de Big Data Analytics</div>
+    <h1>Diseño e implementación de un <span class="accent">Framework de Big Data Analytics</span><br>sobre reseñas de restaurantes en el Perú</h1>
+    <p class="lead" style="margin-top:1em">Arquitectura Lambda con Apache Spark, Delta Lake y Kafka sobre Databricks · Datos públicos de Google Maps</p>
+    <div class="authors">F. Marin · B. Herrera · M. Rojas · T. Vigo · M. Auqui</div>
+    <div style="margin-top:1.4em"><span class="tag">Big Data</span><span class="tag">Procesamiento distribuido</span><span class="tag">Arquitectura Lambda</span><span class="tag">NLP · Clustering</span></div>
+  </section>
+
+  <!-- 2 AGENDA -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">Agenda</span></div>
+    <h2>Contenido de la exposición</h2>
+    <ul class="two">
+      <li><b>1.</b> Contexto y motivación</li>
+      <li><b>2.</b> Brecha y estado del arte</li>
+      <li><b>3.</b> Objetivos</li>
+      <li><b>4.</b> Recolección de datos</li>
+      <li><b>5.</b> Volumetría y perfil del corpus</li>
+      <li><b>6.</b> Arquitectura del sistema (Lambda)</li>
+      <li><b>7.</b> Capa batch · Medallón</li>
+      <li><b>8.</b> Capa de velocidad · Kafka</li>
+      <li><b>9.</b> Justificación de componentes</li>
+      <li><b>10.</b> Modelamiento distribuido</li>
+      <li><b>11.</b> Resultados (territorial, temporal, temático)</li>
+      <li><b>12.</b> Escalabilidad y demo</li>
+      <li><b>13.</b> Conclusiones</li>
+    </ul>
+  </section>
+
+  <!-- 3 CONTEXTO -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">1</span> Contexto y motivación</div>
+    <h2>Gastronomía peruana: valor económico y reto de medición</h2>
+    <div class="row">
+      <div>
+        <ul>
+          <li>Sector estratégico: <b>+220 000</b> establecimientos, asociado a ~<b>11.2%</b> del PBI.</li>
+          <li>Mercado <b>informal, fragmentado y competitivo</b>; la diferenciación se juega en la <b>experiencia del cliente</b>.</li>
+          <li>Medir esa experiencia es <b>costoso</b>: NPS, mystery shopping y auditorías solo para grandes cadenas.</li>
+          <li>La microempresa —la mayoría del sector— queda <b>fuera</b> de esas herramientas.</li>
+        </ul>
+      </div>
+      <div>
+        <div class="card"><h4 class="accent">La oportunidad</h4>
+          <p>Las <b>reseñas de Google Maps</b> son retroalimentación pública, masiva y gratuita (UGC). Cada comensal deja puntaje y texto, pero la fuente está <b>sistemáticamente desaprovechada</b>: nadie la explota a escala.</p></div>
+        <p style="margin-top:.8em"><b>Doble requerimiento</b> que motiva Big Data: volumen histórico masivo + flujo entrante continuo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 BRECHA / LITERATURA -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">2</span> Brecha y estado del arte</div>
+    <h2>Qué dice la literatura y qué falta</h2>
+    <div class="grid g2" style="flex:1;align-content:center">
+      <div class="card"><h4 class="ok">Lo establecido</h4>
+        <p>El UGC funciona como proxy de satisfacción, reputación y desempeño [1]. Se ha usado clustering para segmentar clientes, minería de texto para atributos operativos y modelado de tópicos para tendencias.</p></div>
+      <div class="card"><h4 class="warn">Las brechas</h4>
+        <p>Conjuntos estáticos o de una sola plataforma; análisis de <b>una sola dimensión</b> (sin integrar espacio + texto + reputación); predominio de contextos anglosajones — el <b>caso peruano</b> queda poco explorado.</p></div>
+    </div>
+    <p style="margin-top:1em">Nuestra respuesta: un enfoque <b>robusto, escalable e integrado</b> que articula ingesta masiva de UGC, procesamiento distribuido y extracción de conocimiento accionable.</p>
+  </section>
+
+  <!-- 5 OBJETIVOS -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">3</span> Objetivos</div>
+    <h2>Objetivo general y específicos</h2>
+    <p><b>General:</b> diseñar e implementar un framework de Big Data basado en reseñas de Google Maps para caracterizar la estructura <b>territorial, reputacional y temática</b> del mercado gastronómico peruano observable, y evaluar su utilidad para la toma de decisiones.</p>
+    <ul style="margin-top:.9em">
+      <li>Pipeline distribuido de recolección, depuración e integración (Lambda + medallón Bronze/Silver/Gold).</li>
+      <li>Caracterizar la distribución <b>geográfica y temporal</b> de establecimientos y reseñas.</li>
+      <li>Segmentar usuarios/revisores con <b>K-Means</b> (Spark MLlib).</li>
+      <li>Identificar <b>tópicos</b> con <b>LDA</b>, reportando términos dominantes y métricas internas.</li>
+      <li>Consolidar una <b>base analítica reutilizable</b> (recomendación, monitoreo continuo).</li>
+    </ul>
+  </section>
+
+  <!-- 6 RECOLECCIÓN -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">4</span> Materiales y métodos</div>
+    <h2>Recolección de datos a escala nacional</h2>
+    <div class="row">
+      <div>
+        <ul>
+          <li><b>Etapa 1 — locales:</b> búsquedas en Google Maps iterando <b>1 873 distritos</b> × categorías; dedup por <i>Place ID</i> → <b>39 947</b> restaurantes.</li>
+          <li><b>Etapa 2 — reseñas:</b> navegación <i>headless</i> concurrente (Playwright) con bitácora de reanudación.</li>
+          <li>Calibración de concurrencia (50 locales): <b>8 workers</b> = mejor compromiso.</li>
+        </ul>
+        <table>
+          <tr><th>Workers</th><th class="num-c">Tiempo</th><th class="num-c">Reseñas</th></tr>
+          <tr><td>4</td><td class="num-c">237.9 s</td><td class="num-c">1 227</td></tr>
+          <tr><td><b>8 ✓</b></td><td class="num-c">155.4 s</td><td class="num-c">1 251</td></tr>
+          <tr><td>12</td><td class="num-c">142.5 s</td><td class="num-c">724</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="card"><h4>Variables principales</h4>
+          <p><b>Local:</b> <code>id</code>, <code>title</code>, <code>category</code>, <code>coor</code>, <code>stars</code>, <code>reviews</code>.</p>
+          <p style="margin-top:.5em"><b>Reseña:</b> <code>place_id</code>, <code>id_review</code>, <code>caption</code>, <code>review_date</code>, <code>rating</code>, <code>username</code>, <code>n_review_user</code>.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 VOLUMETRÍA -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">5</span> Volumetría y perfil del corpus</div>
+    <h2>Escala del corpus por etapa</h2>
+    <div class="row">
+      <div>
+        <table>
+          <tr><th>Etapa / entidad</th><th class="num-c">Magnitud</th></tr>
+          <tr><td>Reseñas crudas (Bronze)</td><td class="num-c">3 431 251</td></tr>
+          <tr><td>Reseñas únicas (dedup)</td><td class="num-c">2 779 298</td></tr>
+          <tr><td>Reseñas con texto libre</td><td class="num-c">1 769 378</td></tr>
+          <tr><td>Establecimientos</td><td class="num-c">39 947</td></tr>
+          <tr><td>Usuarios distintos</td><td class="num-c">1 204 998</td></tr>
+          <tr><td>Usuarios con rasgos</td><td class="num-c">~711 000</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="grid g2">
+          <div class="kpi"><div class="num">4.16</div><div class="lbl">rating medio / 5</div></div>
+          <div class="kpi"><div class="num">55.8%</div><div class="lbl">reseñas de 5★</div></div>
+          <div class="kpi"><div class="num">~52%</div><div class="lbl">con texto libre</div></div>
+          <div class="kpi"><div class="num">~11%</div><div class="lbl">de 1–2★</div></div>
+        </div>
+        <p style="margin-top:.8em"><b class="warn">Sesgo positivo</b> (común en reseñas voluntarias): condiciona la lectura y obliga a atender a la <b>minoría crítica</b>, la más informativa.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 ARQUITECTURA LAMBDA -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">6</span> Arquitectura del sistema</div>
+    <h2>Arquitectura Lambda</h2>
+    <figure class="fill"><img src="docs/figuras/arquitectura_lambda.png" alt="Arquitectura Lambda">
+      <figcaption><b>Fig. 1.</b> Capa batch (medallón sobre Delta Lake) + capa de velocidad (Kafka + Spark Streaming), reconciliadas en la capa de servicio.</figcaption></figure>
+    <p style="margin-top:.3em">Lo que la define como <b>Lambda</b> es <b class="accent">batch + streaming con Kafka</b>; el medallón es el esquema de calidad <i>dentro</i> del batch, no la arquitectura.</p>
+  </section>
+
+  <!-- 9 VISTA LÓGICA -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">6</span> Arquitectura del sistema</div>
+    <h2>Vista lógica de componentes</h2>
+    <figure class="fill"><img src="docs/figuras/arq_logica.drawio.png" alt="Arquitectura lógica">
+      <figcaption><b>Fig. 2.</b> Ingesta → rutas batch/streaming → consolidación medallón → vistas Gold → modelamiento MLlib → consumo (tablero/API, previstos).</figcaption></figure>
+  </section>
+
+  <!-- 10 VISTA FÍSICA -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">6</span> Arquitectura del sistema</div>
+    <h2>Vista física de despliegue</h2>
+    <figure class="fill"><img src="docs/figuras/arq_fisica.drawio.png" alt="Arquitectura física">
+      <figcaption><b>Fig. 3.</b> Playwright → Kafka (Aiven) → Spark Streaming → Delta Lake (Bronze/Silver/Gold) → MLlib → servicios de consumo. Componentes desacoplados ⇒ escalables.</figcaption></figure>
+  </section>
+
+  <!-- 11 CAPA BATCH -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">7</span> Capa batch · Medallón</div>
+    <h2>Calidad progresiva sobre Delta Lake</h2>
+    <div class="grid g3" style="flex:1;align-content:center">
+      <div class="card"><h4>🥉 Bronze</h4><p>Dato <b>crudo</b> sin transformar. Trazabilidad e idempotencia de reproceso.</p></div>
+      <div class="card"><h4>🥈 Silver</h4><p>Casteos tolerantes, <b>deduplicación</b>, features de texto/fecha, join reseña+local. <b>Converge</b> batch + stream.</p></div>
+      <div class="card"><h4>🥇 Gold</h4><p>Tres vistas: <b>maestra</b> (+sentimiento), <b>stats por categoría</b>, <b>rasgos por usuario</b>.</p></div>
+    </div>
+    <p>Antes la Gold era casi una copia de Silver; ahora son <b>tres vistas con propósito</b>, la interfaz analítica del sistema. Todo en <b>Spark SQL/DataFrames</b>, sin bajar el dataset al driver.</p>
+  </section>
+
+  <!-- 12 CAPA VELOCIDAD -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">8</span> Capa de velocidad</div>
+    <h2>Ingesta en streaming + filtro anti-duplicados</h2>
+    <ul>
+      <li>Productor → <b>topic de Kafka</b> (Aiven, SASL_SSL, key = <code>place_id</code>).</li>
+      <li><b>Spark Structured Streaming</b> consume en micro-lotes con <i>back-pressure</i>.</li>
+      <li><b class="accent">Hash por registro</b>: <code>record_hash = SHA-256(place_id, id_review, caption, rating, review_date, username)</code>.</li>
+      <li><i>Left anti-join</i> del <code>record_hash</code> contra el histórico → solo lo verdaderamente nuevo se persiste (compara <b>identidad de contenido</b>, no solo el id).</li>
+      <li>Reproceso de Silver/Gold orquestado por <b>jobs de Databricks</b>.</li>
+    </ul>
+    <p class="quote">«Una vez procesado el dato entrante, se reprocesa el flujo aguas abajo» — histórico y stream reconciliados en el lakehouse.</p>
+  </section>
+
+  <!-- 13 JUSTIFICACIÓN -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">9</span> Justificación de componentes</div>
+    <h2>Por qué cada decisión tecnológica</h2>
+    <div class="grid g2" style="flex:1;align-content:center">
+      <div class="card"><h4 class="accent">Apache Spark</h4><p>Motor unificado batch + streaming con la misma API ⇒ una sola base de código [4]. Spark SQL para limpieza/agregación, Structured Streaming para el flujo.</p></div>
+      <div class="card"><h4 class="ok">Delta Lake</h4><p>Transaccionalidad ACID y control de esquema ⇒ reescrituras seguras y reproceso del medallón [6].</p></div>
+      <div class="card"><h4 class="orange">Apache Kafka</h4><p>Log distribuido <b>durable</b>: retiene/reentrega y absorbe ráfagas [5]. <span class="bad">Redis</span> sería caché del endpoint, no ingesta durable.</p></div>
+      <div class="card"><h4 class="vio">Databricks</h4><p>Spark gestionado + <b>Unity Catalog</b> (gobierno) + <b>Volumes</b> + <b>Jobs</b> (lectura/orquestación).</p></div>
+    </div>
+  </section>
+
+  <!-- 14 MODELAMIENTO -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">10</span> Modelamiento distribuido</div>
+    <h2>Aprendizaje no supervisado en Spark MLlib</h2>
+    <div class="grid g2" style="flex:1;align-content:center">
+      <div class="card"><h4>Segmentación · K-Means</h4><p>Features por usuario (n.º reseñas, rating medio, dispersión, palabras) con transformación log y estandarización. <b>k</b> por silueta + codo.</p></div>
+      <div class="card"><h4>Tópicos · LDA</h4><p>Tokenización + stopwords (es, dominio) + <b>TF-IDF</b> → LDA [2] con <b>5 tópicos</b>; interpretación por términos dominantes.</p></div>
+      <div class="card"><h4>Geoespacial</h4><p>Agregación distribuida; solo el resultado pequeño se cruza con polígonos del Perú (GeoPandas, EPSG:4326).</p></div>
+      <div class="card"><h4>Privacidad</h4><p>Resultados agregados; identificadores de usuario solo como claves técnicas.</p></div>
+    </div>
+  </section>
+
+  <!-- 15 TERRITORIAL -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">11</span> Resultados · Territorial</div>
+    <h2>Concentración espacial de la actividad</h2>
+    <figure class="fill"><img src="docs/figuras/dist_geo_regYprov.png" alt="geo">
+      <figcaption><b>Fig. 4.</b> Reseñas por departamento (izq.) y provincia (der.), escala logarítmica. Predominio de Lima Metropolitana y capitales regionales.</figcaption></figure>
+    <p style="margin-top:.3em">Mide <b>visibilidad</b> gastronómica en Google Maps (oferta + digitalización + propensión a reseñar), no un censo del sector.</p>
+  </section>
+
+  <!-- 16 TEMPORAL -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">11</span> Resultados · Temporal</div>
+    <h2>Dinámica temporal de la participación</h2>
+    <div class="row">
+      <figure><img src="docs/figuras/dist_temp.png" alt="temporal mensual"><figcaption><b>Fig. 5a.</b> Evolución mensual + media móvil 12 m.</figcaption></figure>
+      <figure><img src="docs/figuras/dist_temp_semanal.png" alt="temporal semanal"><figcaption><b>Fig. 5b.</b> Engagement por día de la semana.</figcaption></figure>
+    </div>
+    <p style="margin-top:.3em">Crecimiento sostenido del volumen con oscilaciones semanales. Por las fechas relativas estimadas, se leen como <b>tendencias descriptivas</b>.</p>
+  </section>
+
+  <!-- 17 ENGAGEMENT -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">11</span> Resultados · Engagement textual</div>
+    <h2>Las reseñas negativas dicen más</h2>
+    <table>
+      <tr><th>Categoría</th><th class="num-c">Reseñas</th><th class="num-c">Prom. caract.</th><th class="num-c">Prom. palabras</th><th class="num-c">Part. %</th></tr>
+      <tr><td><b>Alta (4–5★)</b></td><td class="num-c">1 446 040</td><td class="num-c">39.24</td><td class="num-c">6.62</td><td class="num-c">77.94</td></tr>
+      <tr><td><b>Media (3★)</b></td><td class="num-c">203 000</td><td class="num-c">40.72</td><td class="num-c">7.23</td><td class="num-c">10.94</td></tr>
+      <tr><td><b class="warn">Baja (1–2★)</b></td><td class="num-c">200 328</td><td class="num-c">91.55</td><td class="num-c">16.48</td><td class="num-c">10.80</td></tr>
+      <tr><td>No clasificada</td><td class="num-c">6 031</td><td class="num-c">60.80</td><td class="num-c">10.20</td><td class="num-c">0.33</td></tr>
+    </table>
+    <p style="margin-top:.7em">Las positivas son mayoritarias pero <b>breves</b>; las negativas, escasas pero <b>~2.5× más extensas</b>. <b class="accent">Quien queda insatisfecho escribe más</b> → fuente clave para diagnóstico operativo.</p>
+  </section>
+
+  <!-- 18 CATEGORÍAS -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">11</span> Resultados · Categorías</div>
+    <h2>Reputación por tipo de establecimiento</h2>
+    <figure class="fill"><img src="docs/figuras/stats_categoria.png" alt="categorias">
+      <figcaption><b>Fig. 6.</b> Top categorías por rating promedio y % de aprobación (vista Gold <code>stats_categoria</code>, categorías con &gt;500 reseñas).</figcaption></figure>
+  </section>
+
+  <!-- 19 SELECCIÓN K -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">11</span> Resultados · Segmentación</div>
+    <h2>Selección del número de clústeres</h2>
+    <div class="row">
+      <figure><img src="docs/figuras/kmeans_seleccion.png" alt="seleccion k"><figcaption><b>Fig. 7.</b> Silueta y método del codo (WSSSE) para k ∈ [2, 9].</figcaption></figure>
+      <div>
+        <ul>
+          <li>Óptimo: <b class="accent">k = 7</b> — silueta <b>0.6442</b>, inercia/WSSSE <b>590 652</b>.</li>
+          <li>k=2 (0.6335) y k=3 (0.6289) también separan bien ⇒ estructura jerárquica.</li>
+          <li>Silueta &gt; 0.6 ⇒ clústeres <b>cohesionados</b>.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 20 PERFILES -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">11</span> Resultados · Segmentación</div>
+    <h2>Siete perfiles de revisores accionables</h2>
+    <div class="row">
+      <figure><img src="docs/figuras/kmeans_spark.png" alt="kmeans"><figcaption><b>Fig. 8.</b> Volumen por clúster y satisfacción vs. esfuerzo textual.</figcaption></figure>
+      <div style="flex:1.25">
+        <table>
+          <tr><th>Perfil</th><th class="num-c">Usuarios</th><th class="num-c">Rating</th><th>Acción</th></tr>
+          <tr><td>Validador masivo</td><td class="num-c">303 101</td><td class="num-c">4.76</td><td>Verificar autenticidad</td></tr>
+          <tr><td>Promotor genuino</td><td class="num-c">147 280</td><td class="num-c">4.84</td><td>Incentivar reseñas</td></tr>
+          <tr><td>Recurrente satisfecho</td><td class="num-c">76 797</td><td class="num-c">4.36</td><td>Fidelización</td></tr>
+          <tr><td>Decepcionado silencioso</td><td class="num-c">71 252</td><td class="num-c">2.22</td><td>Recuperación</td></tr>
+          <tr><td>Crítico detallista</td><td class="num-c">43 033</td><td class="num-c">1.57</td><td>Escalar quejas</td></tr>
+          <tr><td>Experiencia errática</td><td class="num-c">39 881</td><td class="num-c">3.32</td><td>Revisar consistencia</td></tr>
+          <tr><td>Foodie activo</td><td class="num-c">29 980</td><td class="num-c">4.10</td><td>Embajadores</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 21 TÓPICOS -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">11</span> Resultados · Tópicos</div>
+    <h2>Cinco dimensiones de la experiencia (LDA)</h2>
+    <div class="row">
+      <figure><img src="docs/figuras/lda_spark.png" alt="lda"><figcaption><b>Fig. 9.</b> Términos dominantes por tópico (Spark MLlib).</figcaption></figure>
+      <div style="flex:1.2">
+        <table>
+          <tr><th>Tópico</th><th>Términos</th><th>Lectura</th></tr>
+          <tr><td>0</td><td>pésima, mala, falta…</td><td class="bad">Quejas operativas</td></tr>
+          <tr><td>1</td><td>platos, atención, sabor</td><td>Servicio general</td></tr>
+          <tr><td>2</td><td>excelente, acogedor, amable</td><td class="ok">Ambiente positivo</td></tr>
+          <tr><td>3</td><td>mejor, familia, pizzas</td><td>Recomendación familiar</td></tr>
+          <tr><td>4</td><td>pollo, papas, rico</td><td class="ok">Sabor y comida</td></tr>
+        </table>
+        <p style="margin-top:.6em">El corpus separa la <b>insatisfacción operativa</b> (tóp. 0) de la <b>satisfacción</b> por comida y ambiente (tóp. 2, 4).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 22 ESCALABILIDAD -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">12</span> Escalabilidad</div>
+    <h2>Rendimiento de un sistema distribuido</h2>
+    <ul>
+      <li>Prueba de carga: lotes crecientes (<b>1k, 2k, 4k…</b>) midiendo <b>throughput</b> de ingesta y <b>latencia end-to-end</b> (sello <code>ingest_ts</code>).</li>
+      <li>Al ser <b>distribuido</b>, el trabajo se reparte entre los nodos del clúster ⇒ el throughput agregado crece <b>añadiendo capacidad, sin cambiar el código</b>.</li>
+      <li>Evidencia preliminar: la calibración de extracción ya mostró escalamiento positivo al duplicar el paralelismo.</li>
+      <li><i>Back-pressure</i> (límite por micro-lote) ⇒ degradación controlada ante ráfagas, no saturación.</li>
+    </ul>
+  </section>
+
+  <!-- 23 DEMO -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">12</span> Demostración</div>
+    <h2>Aplicación interactiva (Streamlit)</h2>
+    <div class="grid g2" style="flex:1;align-content:center">
+      <div class="card"><h4>📊 Exploración en vivo</h4><p>KPIs del corpus y consultas filtradas con gráficos al momento (Polars sobre el parquet).</p></div>
+      <div class="card"><h4>🗺️ Resultados distribuidos</h4><p>Galería de figuras de los notebooks Spark/Databricks.</p></div>
+      <div class="card"><h4>👥 Inferencia · Segmentación</h4><p>Predice el segmento de un usuario según su comportamiento (K-Means).</p></div>
+      <div class="card"><h4>💬 Inferencia · Tópicos</h4><p>Clasifica el texto de una reseña en una dimensión (LDA).</p></div>
+    </div>
+    <p><code>streamlit run streamlit/app.py</code> — modelos locales que aproximan a los distribuidos.</p>
+  </section>
+
+  <!-- 24 CONCLUSIONES -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">13</span> Conclusiones</div>
+    <h2>Conclusiones, limitaciones y trabajo futuro</h2>
+    <div class="row">
+      <div>
+        <h4 class="ok" style="margin-bottom:.4em">Conclusiones</h4>
+        <ul>
+          <li>UGC disperso → base analítica <b>distribuida y reutilizable</b> sobre 3.4 M de reseñas.</li>
+          <li>Lambda funcional: histórico + entrante reconciliados en el lakehouse.</li>
+          <li>Hallazgos accionables: territorio, sesgo positivo, minoría crítica, 7 perfiles, 5 tópicos.</li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="warn" style="margin-bottom:.4em">Limitaciones y futuro</h4>
+        <ul>
+          <li>Sesgo de cobertura de Google Maps; fechas relativas estimadas.</li>
+          <li>Modelos <b>exploratorios</b>: faltan pruebas inferenciales y coherencia de tópicos.</li>
+          <li>Materializar la capa de servicio (tablero + API); integrar más fuentes; analítica predictiva.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 25 REFERENCIAS -->
+  <section class="slide">
+    <div class="eyebrow"><span class="badge">Ref</span></div>
+    <h2>Referencias seleccionadas</h2>
+    <ol class="refs">
+      <li>B. Liu, <i>Sentiment Analysis and Opinion Mining</i>, Morgan &amp; Claypool, 2012.</li>
+      <li>D. Blei, A. Ng, M. Jordan, “Latent Dirichlet Allocation,” <i>JMLR</i>, vol. 3, 2003.</li>
+      <li>N. Marz, J. Warren, <i>Big Data: Principles and Best Practices of Scalable Realtime Data Systems</i>, Manning, 2015.</li>
+      <li>M. Zaharia et al., “Apache Spark: A Unified Engine for Big Data Processing,” <i>CACM</i>, 2016.</li>
+      <li>J. Kreps, N. Narkhede, J. Rao, “Kafka: A Distributed Messaging System for Log Processing,” NetDB, 2011.</li>
+      <li>M. Armbrust et al., “Delta Lake: ACID Table Storage over Cloud Object Stores,” <i>VLDB</i>, 2020.</li>
+      <li>El Comercio, “MINCETUR: el sector gastronómico y su peso en el PBI,” 2020.</li>
+    </ol>
+    <p style="margin-top:1.4em" class="lead"><b>Gracias.</b> ¿Preguntas?</p>
+  </section>
+
+</div>
+
+<div class="footer"><span>BDA-PI · Universidad del Pacífico · Big Data Analytics</span><span id="pg"></span></div>
+<div class="hint">← → · espacio · F pantalla completa</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];let i=0;
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    document.getElementById('pg').textContent=(i+1)+' / '+slides.length;
+    document.getElementById('bar').style.width=((i+1)/slides.length*100)+'%';
+  }
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();show(i+1);}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(i-1);}
+    else if(e.key==='Home'){show(0);} else if(e.key==='End'){show(slides.length-1);}
+    else if(e.key.toLowerCase()==='f'){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}
+  });
+  document.addEventListener('click',e=>{if(e.target.closest('a'))return;if(e.clientX>innerWidth*0.5)show(i+1);else show(i-1);});
+  show(0);
+</script>
+</body>
+</html>
