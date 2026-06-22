@@ -2,6 +2,7 @@
 .env
 *.pem
 .claude
+__pycache__/
 
 # Ignore CSV files
 *.csv
