@@ -247,14 +247,4 @@ streamlit run streamlit/app.py
 - `.env` y `*.pem` están en `.gitignore`. Si alguna credencial se expuso, debe rotarse
   en la consola de Aiven.
 
----
 
-## Stack tecnológico
-
-Python, aiohttp, Playwright, Polars, pandas, Apache Spark, Spark MLlib, scikit-learn,
-Delta Lake, Apache Kafka (Aiven), Databricks, GeoPandas, Folium, Streamlit.
-
----
-
-Uso educativo y de investigación. Respetar los Términos de Servicio de Google y usar de
-forma responsable.
