@@ -1,9 +1,10 @@
 # bda-pi — Big Data Analytics de Reseñas Gastronómicas del Perú
 
 Pipeline de datos de extremo a extremo sobre el sector gastronómico peruano: ingesta
-masiva de locales y reseñas de Google Maps, consolidación en una arquitectura
-Medallion sobre Databricks, modelado analítico distribuido con Spark MLlib e ingesta
-incremental en tiempo real mediante Apache Kafka y Spark Structured Streaming.
+masiva de locales y reseñas de Google Maps, consolidación bajo una **arquitectura
+Lambda** con metodología **Medallion** (Bronze/Silver/Gold) sobre Databricks y Delta
+Lake, modelado analítico distribuido con Spark MLlib e ingesta incremental en tiempo
+real mediante Apache Kafka y Spark Structured Streaming.
 
 Proyecto académico — Universidad del Pacífico (UP), curso de Big Data Analytics.
 
@@ -11,11 +12,13 @@ Proyecto académico — Universidad del Pacífico (UP), curso de Big Data Analyt
 
 ## Arquitectura
 
-El proyecto implementa una arquitectura híbrida **Batch + Kappa** sobre un mismo
-lakehouse Delta (patrón Medallion). El diagrama muestra los componentes lógicos
-(qué hace cada etapa) anotados con sus componentes tecnológicos (con qué se
-implementa). La línea sólida representa el camino **batch**; la línea punteada, el
-camino **streaming (Kappa)**.
+El proyecto implementa una **arquitectura Lambda** sobre un mismo lakehouse Delta,
+en la que el patrón **Medallion** (Bronze/Silver/Gold) organiza la calidad
+progresiva de los datos *dentro* de la capa batch (el medallón es el esquema de
+datos, no la arquitectura). El diagrama muestra los componentes lógicos (qué hace
+cada etapa) anotados con sus componentes tecnológicos (con qué se implementa). La
+línea sólida representa la **capa batch**; la línea punteada, la **capa de
+velocidad (streaming)**.
 
 ```mermaid
 flowchart TB
@@ -63,54 +66,51 @@ flowchart TB
     GOLD ==> VIZ
 ```
 
-### Camino batch
+### Capa batch
 
 La carga histórica (los ~3.4 M de reseñas ya scrapeadas) se ingesta directamente a la
 capa Bronze y se procesa por reprocesamiento completo a través de Bronze → Silver →
 Gold. Es la vía de alto volumen y alta latencia: produce las tablas Gold sobre las que
 corren los modelos y los análisis.
 
-### Camino Kappa (streaming)
+### Capa de velocidad (streaming)
 
-Para los datos nuevos, el sistema sigue el estilo **Kappa**: un único motor de
-procesamiento (Spark Structured Streaming) consume un **log de eventos inmutable**
-(el topic de Kafka) y escribe de forma incremental al mismo lakehouse. No existe una
-ruta de código batch paralela para los datos recientes; el reprocesamiento, si se
-requiere, se hace **reproduciendo el log** desde el offset deseado
-(`startingOffsets=earliest`) con el mismo código de streaming.
+Para los datos nuevos, la **capa de velocidad** ingiere las reseñas en tiempo casi
+real: un productor publica en un **topic de Kafka** y Spark Structured Streaming las
+consume en micro-lotes, aplicando un filtro anti-duplicados (hash por registro)
+contra el histórico antes de escribirlas en una tabla Bronze de *streaming*. Es la
+vía de baja latencia y volumen incremental, complementaria al reprocesamiento batch
+del histórico.
 
 ---
 
-## Por qué Batch + Kappa y no Lambda
+## Arquitectura Lambda
 
-La arquitectura **Lambda** mantiene dos rutas de procesamiento separadas —una *batch
-layer* y una *speed layer*— y una *serving layer* que **fusiona** ambas vistas para
-responder consultas. Su principal inconveniente operativo es la **duplicación de
-lógica**: la misma transformación debe implementarse y mantenerse dos veces (en batch
-y en streaming), con el riesgo de divergencia entre ambas.
+La arquitectura **Lambda** combina dos rutas de procesamiento complementarias sobre
+una capa de servicio común:
 
-La arquitectura **Kappa** elimina esa duplicación: trata el flujo de datos como un
-**log de eventos inmutable y reproducible** y usa **un solo motor de streaming** tanto
-para el procesamiento en vivo como para el reprocesamiento histórico (releyendo el
-log). No hay *speed layer* y *batch layer* con código distinto; hay una sola ruta.
+- **Capa batch.** Procesa el **histórico masivo** (~3.4 M de reseñas ya scrapeadas)
+  por reprocesamiento completo a través del medallón Bronze → Silver → Gold. Es la
+  vía de alto volumen y mayor latencia que produce las vistas analíticas estables.
+- **Capa de velocidad (speed layer).** Atiende las **reseñas nuevas** con baja
+  latencia: Kafka como log de eventos y Spark Structured Streaming como consumidor,
+  con *checkpointing* y un filtro anti-duplicados (hash por registro) contra el
+  histórico.
+- **Capa de servicio.** Ambas rutas se **reconcilian** al regenerar Silver (unión y
+  deduplicación de histórico + stream), de modo que las vistas **Gold** reflejan
+  siempre el estado más actual y son el punto único de consumo para los modelos y
+  la analítica.
 
-Este proyecto adopta un enfoque **híbrido y pragmático**:
+Lo que define la arquitectura como Lambda es esta coexistencia **batch + velocidad
+(streaming con Kafka)**; el patrón **Medallion** es únicamente el esquema de calidad
+de datos *dentro* de la capa batch, no la arquitectura en sí. La orquestación se
+realiza con **jobs de Databricks**, que disparan el reproceso de Silver/Gold tras la
+ingesta del stream.
 
-- **Batch** para la **carga inicial masiva** del histórico ya existente (3.4 M de
-  reseñas que viven como archivos, no como eventos). Reprocesarlo como stream no aporta
-  valor y sería más lento.
-- **Kappa** para el **flujo incremental** de reseñas nuevas: Kafka como log inmutable y
-  Spark Structured Streaming como motor único, con *checkpointing* para semántica
-  *exactly-once* y reprocesamiento por *replay* del log.
-
-Ambos caminos **convergen en la misma capa Bronze de Delta Lake**, de modo que aguas
-abajo (Silver, Gold, modelos) existe una sola representación de los datos. Se evita así
-la *serving layer* de reconciliación que exige Lambda, manteniendo una única base de
-código de transformación.
-
-> Nota de alcance: la *serving layer* que fusiona en consulta una vista batch con una
-> vista de baja latencia (lo que caracteriza a Lambda) no se implementa de forma
-> deliberada; la frescura se obtiene del *append* incremental del stream sobre Bronze.
+> Nota de implementación: la reconciliación se materializa en el lakehouse (al
+> regenerar Silver/Gold), no como una fusión en tiempo de consulta. Esto mantiene una
+> única representación de los datos aguas abajo y reduce la duplicación de lógica
+> entre rutas, ya que ambas comparten el mismo motor (Spark) y formato (Delta Lake).
 
 ---
 
@@ -124,10 +124,14 @@ bda-pi/
 │   ├── Medallion.ipynb       # Bronze -> Silver -> Gold
 │   ├── BDA_ML_Spark.ipynb    # ML distribuido (Spark MLlib) - version oficial
 │   └── BDA_ML.ipynb          # ML en pandas/scikit-learn - version de referencia
-├── kafka/                # Ingesta en tiempo real (camino Kappa)
+├── kafka/                # Ingesta en tiempo real (capa de velocidad)
 │   ├── 1_producer.py         # productor de eventos (simula llegadas desde la particion 1%)
 │   ├── 2_consumidor.py       # consumidor Spark Structured Streaming
 │   └── README.md
+├── streamlit/            # App de demostracion (KPIs, consultas en vivo, inferencia)
+│   ├── app.py                # interfaz Streamlit
+│   ├── lib.py                # datos (Polars) + modelos ligeros (scikit-learn)
+│   └── requirements.txt
 ├── dataset/              # datos (ignorados por git: *.csv, *.parquet)
 ├── docs/                 # reportes
 ├── requirements.txt      # dependencias generales del proyecto
@@ -149,6 +153,7 @@ Nota sobre datos: los archivos `*.csv` / `*.parquet` y `.env` / `*.pem` están e
 | Procesamiento | [`notebooks/Medallion.ipynb`](notebooks/) | Arquitectura Medallion en Databricks: Bronze → Silver → Gold sobre Delta Lake. |
 | Modelado | [`notebooks/BDA_ML_Spark.ipynb`](notebooks/) | Segmentación de usuarios (KMeans) y *topic modeling* (TF-IDF + LDA) distribuidos con Spark MLlib, más visualización geográfica. |
 | Streaming | [`kafka/`](kafka/) | Ingesta incremental de reseñas nuevas (Kafka/Aiven + Spark Structured Streaming). Detalle en su [README](kafka/README.md). |
+| Demo | [`streamlit/`](streamlit/) | App interactiva: KPIs del corpus, consultas en vivo, galería de resultados e inferencia de los modelos (segmentación y tópicos). Detalle en su [README](streamlit/README.md). |
 
 ---
 
@@ -163,10 +168,10 @@ Nota sobre datos: los archivos `*.csv` / `*.parquet` y `.env` / `*.pem` están e
    categoría y *features* por usuario.
 4. **Modelado.** Sobre la capa Gold se ejecutan *clustering* de usuarios y *topic
    modeling* de reseñas de forma distribuida con Spark MLlib.
-5. **Streaming (Kappa).** `kafka/1_producer.py` publica reseñas nuevas en el topic de
-   Kafka; `kafka/2_consumidor.py` las consume con Spark Structured Streaming y las anexa
-   a Bronze de forma incremental, reentrando al mismo lakehouse sin reprocesar el
-   histórico.
+5. **Streaming (capa de velocidad).** `kafka/1_producer.py` publica reseñas nuevas en
+   el topic de Kafka; el consumidor Spark Structured Streaming las anexa a Bronze de
+   forma incremental (con filtro anti-duplicados por hash) y dispara el reproceso de
+   Silver/Gold, reconciliando histórico y stream en el mismo lakehouse.
 
 ---
 
@@ -209,6 +214,31 @@ Detalle completo en [`kafka/README.md`](kafka/README.md).
 
 ---
 
+## Demo interactiva (Streamlit)
+
+Una app de [`streamlit/`](streamlit/) resalta lo más destacable del proyecto:
+
+- **Resumen**: KPIs del corpus calculados en vivo (3.4 M reseñas, 1.2 M usuarios,
+  calificación media, % de 5 estrellas).
+- **Exploración en vivo**: filtros por calificación/palabra y gráficos de
+  distribución, volumen mensual y *engagement* textual.
+- **Resultados del análisis distribuido**: galería de las figuras generadas por los
+  notebooks de Spark/Databricks (geo, temporal, categorías, K-Means, LDA).
+- **Inferencia**: predicción del **segmento** de un usuario (K-Means) y del **tópico**
+  de una reseña (LDA).
+
+```bash
+pip install -r streamlit/requirements.txt
+streamlit run streamlit/app.py
+```
+
+> Los modelos de la app son versiones locales ligeras (scikit-learn) que **aproximan**
+> a los modelos distribuidos (Spark MLlib) del informe; se usan para demostrar la
+> inferencia de forma interactiva. Requiere `dataset/reviews_dataset.parquet` (o definir
+> `BDA_DATA_PATH`); la galería de resultados funciona sin el dataset.
+
+---
+
 ## Seguridad
 
 - Las credenciales (Kafka/Aiven) se gestionan exclusivamente mediante variables de
@@ -222,7 +252,7 @@ Detalle completo en [`kafka/README.md`](kafka/README.md).
 ## Stack tecnológico
 
 Python, aiohttp, Playwright, Polars, pandas, Apache Spark, Spark MLlib, scikit-learn,
-Delta Lake, Apache Kafka (Aiven), Databricks, GeoPandas, Folium.
+Delta Lake, Apache Kafka (Aiven), Databricks, GeoPandas, Folium, Streamlit.
 
 ---
 
