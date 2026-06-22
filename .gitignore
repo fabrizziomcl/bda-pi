@@ -1,6 +1,7 @@
 # Secrets / env (NUNCA commitear credenciales)
 .env
 *.pem
+.claude
 
 # Ignore CSV files
 *.csv
