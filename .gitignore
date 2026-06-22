@@ -23,3 +23,11 @@ scraperReviews/cache/
 scraperReviews/**/cache/
 scraperReviews/**/*.parquet
 scraperReviews/**/*.csv
+
+docs/figuras/
+docs/figuras_old/
+docs/fig_arquitectura.py
+docs/referencias.bib
+docs/revision_final.txt
+docs/bda_pi_reporte_parcial.tex
+docs/bda_pi_reporte_final.tex
