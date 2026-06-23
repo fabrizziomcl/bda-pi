@@ -1,0 +1,403 @@
+---
+title: "Framework de Big Data Analytics sobre reseñas de restaurantes en el Perú"
+subtitle: "Arquitectura Lambda con Apache Spark, Delta Lake y Kafka · Datos de Google Maps"
+author: "F. Marin · B. Herrera · M. Rojas · T. Vigo · M. Auqui"
+institute: "Universidad del Pacífico · Big Data Analytics"
+format:
+  revealjs:
+    theme: dark
+    width: 1280
+    height: 720
+    slide-number: c/t
+    transition: fade
+    controls: true
+    progress: true
+    incremental: false
+    fig-align: center
+    include-in-header:
+      text: |
+        <style>
+          :root{
+            --accent:#3b82f6; --green:#22c55e; --orange:#f59e0b; --violet:#a78bfa; --red:#f87171;
+            --panel:#152136; --line:#26344f; --muted:#9fb3d1;
+          }
+          .reveal{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;}
+          .reveal .slides section{text-align:left;}
+          .reveal h1,.reveal h2,.reveal h3{color:#fff;letter-spacing:-.5px;}
+          .reveal h2{border-left:5px solid var(--accent);padding-left:.4em;font-size:1.5em;}
+          .reveal p,.reveal li{color:#eaf0fb;}
+          .reveal small,.muted{color:var(--muted);}
+          .accent{color:var(--accent);} .ok{color:var(--green);} .warn{color:var(--orange);}
+          .vio{color:var(--violet);} .bad{color:var(--red);}
+          .grid{display:grid;gap:.8em;margin-top:.4em;}
+          .g2{grid-template-columns:1fr 1fr;} .g3{grid-template-columns:repeat(3,1fr);} .g4{grid-template-columns:repeat(4,1fr);}
+          .card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:.7em .9em;}
+          .card h4{color:#fff;margin:.1em 0 .3em;font-size:1em;}
+          .card p{font-size:.8em;color:var(--muted);margin:0;}
+          .kpi{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:.7em;text-align:center;}
+          .kpi .num{font-size:2em;font-weight:800;color:var(--accent);line-height:1;}
+          .kpi .lbl{color:var(--muted);font-size:.7em;margin-top:.3em;}
+          .reveal table{font-size:.62em;}
+          .reveal th{color:var(--accent);text-transform:uppercase;font-size:.85em;letter-spacing:1px;}
+          .reveal td b{color:#fff;}
+          .num-c{text-align:right;font-variant-numeric:tabular-nums;}
+          .tag{display:inline-block;background:#1d2c46;border:1px solid var(--line);color:var(--muted);
+            border-radius:999px;padding:.2em .7em;font-size:.7em;margin:.15em .25em 0 0;}
+          .quote{border-left:3px solid var(--violet);padding-left:1em;font-style:italic;}
+          .refs{font-size:.8em;color:var(--muted);}
+        </style>
+---
+
+## Contenido de la exposición {.smaller}
+
+::: {.grid .g2}
+::: {}
+1. Contexto y motivación
+2. Brecha y estado del arte
+3. Objetivos
+4. Recolección de datos
+5. Volumetría y perfil del corpus
+6. Arquitectura del sistema (Lambda)
+7. Capa batch · Medallón
+:::
+::: {}
+8. Capa de velocidad · Kafka
+9. Justificación de componentes
+10. Modelamiento distribuido
+11. Resultados (territorial, temporal, temático)
+12. Escalabilidad y demo
+13. Conclusiones
+:::
+:::
+
+# 1 · Contexto y motivación
+
+## Gastronomía peruana: valor económico y reto de medición
+
+::: {.grid .g2}
+::: {}
+- Sector estratégico: **+220 000** establecimientos, ~**11.2 %** del PBI.
+- Mercado **informal, fragmentado y competitivo**; la diferenciación se juega en la **experiencia del cliente**.
+- Medirla es **costoso**: NPS, *mystery shopping* y auditorías solo para grandes cadenas.
+- La microempresa —la mayoría— queda **fuera** de esas herramientas.
+:::
+::: {}
+::: {.card}
+#### [La oportunidad]{.accent}
+Las **reseñas de Google Maps** son retroalimentación pública, masiva y gratuita (UGC). Cada comensal deja puntaje y texto, pero la fuente está **desaprovechada**.
+:::
+
+**Doble requerimiento** que motiva Big Data: volumen histórico masivo + flujo entrante continuo.
+:::
+:::
+
+# 2 · Brecha y estado del arte
+
+## Qué dice la literatura y qué falta
+
+::: {.grid .g2}
+::: {.card}
+#### [Lo establecido]{.ok}
+El UGC funciona como proxy de satisfacción, reputación y desempeño [1]. Se ha usado *clustering*, minería de texto y modelado de tópicos.
+:::
+::: {.card}
+#### [Las brechas]{.warn}
+Conjuntos estáticos o de una sola plataforma; análisis de **una sola dimensión**; predominio anglosajón — el **caso peruano** queda poco explorado.
+:::
+:::
+
+Nuestra respuesta: un enfoque **robusto, escalable e integrado** que articula ingesta masiva de UGC, procesamiento distribuido y conocimiento accionable.
+
+# 3 · Objetivos
+
+## Objetivo general y específicos
+
+**General:** diseñar e implementar un framework de Big Data sobre reseñas de Google Maps para caracterizar la estructura **territorial, reputacional y temática** del mercado gastronómico peruano observable.
+
+- Pipeline distribuido de recolección, depuración e integración (Lambda + medallón Bronze/Silver/Gold).
+- Caracterizar la distribución **geográfica y temporal** de establecimientos y reseñas.
+- Segmentar usuarios/revisores con **K-Means** (Spark MLlib).
+- Identificar **tópicos** con **LDA**, reportando términos dominantes y métricas internas.
+- Consolidar una **base analítica reutilizable** (recomendación, monitoreo continuo).
+
+# 4 · Materiales y métodos
+
+## Recolección de datos a escala nacional
+
+::: {.grid .g2}
+::: {}
+- **Etapa 1 — locales:** búsquedas iterando **1 873 distritos** × categorías; dedup por *Place ID* → **39 947** restaurantes.
+- **Etapa 2 — reseñas:** navegación *headless* concurrente (Playwright) con bitácora de reanudación.
+- Calibración de concurrencia: **8 workers** = mejor compromiso.
+
+| Workers | Tiempo | Reseñas |
+|--:|--:|--:|
+| 4 | 237.9 s | 1 227 |
+| **8 ✓** | 155.4 s | 1 251 |
+| 12 | 142.5 s | 724 |
+:::
+::: {}
+::: {.card}
+#### Variables principales
+**Local:** `id`, `title`, `category`, `coor`, `stars`, `reviews`.
+
+**Reseña:** `place_id`, `id_review`, `caption`, `review_date`, `rating`, `username`, `n_review_user`.
+:::
+:::
+:::
+
+# 5 · Volumetría y perfil del corpus
+
+## Escala del corpus por etapa
+
+::: {.grid .g2}
+::: {}
+| Etapa / entidad | Magnitud |
+|:--|--:|
+| Reseñas crudas (Bronze) | 3 431 251 |
+| Reseñas únicas (dedup) | 2 779 298 |
+| Reseñas con texto libre | 1 769 378 |
+| Establecimientos | 39 947 |
+| Usuarios distintos | 1 204 998 |
+| Usuarios con rasgos | 1 200 365 |
+:::
+::: {}
+::: {.grid .g2}
+::: {.kpi} ::: {.num} 4.16 ::: ::: {.lbl} rating medio / 5 ::: :::
+::: {.kpi} ::: {.num} 55.8% ::: ::: {.lbl} reseñas de 5★ ::: :::
+::: {.kpi} ::: {.num} ~52% ::: ::: {.lbl} con texto libre ::: :::
+::: {.kpi} ::: {.num} ~11% ::: ::: {.lbl} de 1–2★ ::: :::
+:::
+
+[**Sesgo positivo**]{.warn} (común en reseñas voluntarias): obliga a atender a la **minoría crítica**, la más informativa.
+:::
+:::
+
+# 6 · Arquitectura del sistema
+
+## Arquitectura Lambda
+
+![Capa batch (medallón sobre Delta Lake) + capa de velocidad (Kafka + Spark Streaming), reconciliadas en la capa de servicio.](docs/figuras/arquitectura_lambda.png){width="78%"}
+
+Lo que la define como **Lambda** es [**batch + streaming con Kafka**]{.accent}; el medallón es el esquema de calidad *dentro* del batch.
+
+## Vista lógica de componentes
+
+![Ingesta → rutas batch/streaming → consolidación medallón → vistas Gold → modelamiento MLlib → consumo (tablero/API, previstos).](docs/figuras/arq_logica.drawio.png){width="80%"}
+
+## Vista física de despliegue
+
+![Playwright → Kafka (Aiven) → Spark Streaming → Delta Lake (Bronze/Silver/Gold) → MLlib → consumo. Componentes desacoplados ⇒ escalables.](docs/figuras/arq_fisica.drawio.png){width="85%"}
+
+# 7 · Capa batch · Medallón
+
+## Calidad progresiva sobre Delta Lake
+
+::: {.grid .g3}
+::: {.card} #### 🥉 Bronze
+Dato **crudo** sin transformar. Trazabilidad e idempotencia de reproceso.
+:::
+::: {.card} #### 🥈 Silver
+Casteos tolerantes, **deduplicación**, features de texto/fecha, join reseña+local. **Converge** batch + stream.
+:::
+::: {.card} #### 🥇 Gold
+Tres vistas: **maestra** (+sentimiento), **stats por categoría**, **rasgos por usuario**.
+:::
+:::
+
+Antes la Gold era casi una copia de Silver; ahora son **tres vistas con propósito**. Todo en **Spark SQL/DataFrames**, sin bajar el dataset al driver.
+
+# 8 · Capa de velocidad
+
+## Ingesta en streaming + filtro anti-duplicados
+
+- Productor → **topic de Kafka** (Aiven, SASL_SSL, key = `place_id`).
+- **Spark Structured Streaming** consume en micro-lotes con *back-pressure*.
+- [**Hash por registro**]{.accent}: `SHA-256(place_id, id_review, caption, rating, review_date, username)`.
+- *Left anti-join* del `record_hash` contra el histórico → solo lo verdaderamente nuevo se persiste.
+- Reproceso de Silver/Gold orquestado por **jobs de Databricks**.
+
+::: {.quote}
+«Una vez procesado el dato entrante, se reprocesa el flujo aguas abajo» — histórico y stream reconciliados en el lakehouse.
+:::
+
+# 9 · Justificación de componentes
+
+## Por qué cada decisión tecnológica
+
+::: {.grid .g2}
+::: {.card} #### [Apache Spark]{.accent}
+Motor unificado batch + streaming con la misma API ⇒ una sola base de código [4].
+:::
+::: {.card} #### [Delta Lake]{.ok}
+Transaccionalidad ACID y control de esquema ⇒ reescrituras seguras y reproceso del medallón [6].
+:::
+::: {.card} #### [Apache Kafka]{.warn}
+Log distribuido **durable**: retiene/reentrega y absorbe ráfagas [5]. Redis sería caché, no ingesta durable.
+:::
+::: {.card} #### [Databricks]{.vio}
+Spark gestionado + **Unity Catalog** + **Volumes** + **Jobs**.
+:::
+:::
+
+# 10 · Modelamiento distribuido
+
+## Aprendizaje no supervisado en Spark MLlib
+
+::: {.grid .g2}
+::: {.card} #### Segmentación · K-Means
+Features por usuario (n.º reseñas, rating medio, dispersión, palabras) con log y estandarización. **k** por silueta + codo.
+:::
+::: {.card} #### Tópicos · LDA
+Tokenización + stopwords (es, dominio) + **TF-IDF** → LDA [2] con **5 tópicos** (optimizador *online*).
+:::
+::: {.card} #### Geoespacial
+Agregación distribuida; solo el resultado pequeño se cruza con polígonos del Perú (GeoPandas).
+:::
+::: {.card} #### Privacidad
+Resultados agregados; identificadores de usuario solo como claves técnicas.
+:::
+:::
+
+# 11 · Resultados
+
+## Concentración espacial de la actividad
+
+![Reseñas por departamento (izq.) y provincia (der.), escala logarítmica. Predominio de Lima Metropolitana y capitales regionales.](docs/figuras/dist_geo_regYprov.png){width="80%"}
+
+Mide **visibilidad** gastronómica en Google Maps, no un censo del sector.
+
+## Dinámica temporal de la participación
+
+::: {layout-ncol=2}
+![Evolución mensual + media móvil 12 m.](docs/figuras/dist_temp.png)
+
+![Engagement por día de la semana.](docs/figuras/dist_temp_semanal.png)
+:::
+
+Crecimiento sostenido con oscilaciones semanales. Por las fechas relativas estimadas, se leen como **tendencias descriptivas**.
+
+## Las reseñas negativas dicen más
+
+| Categoría | Reseñas | Prom. caract. | Prom. palabras | Part. % |
+|:--|--:|--:|--:|--:|
+| **Alta (4–5★)** | 1 446 040 | 39.24 | 6.62 | 77.94 |
+| **Media (3★)** | 203 000 | 40.72 | 7.23 | 10.94 |
+| [**Baja (1–2★)**]{.warn} | 200 328 | 91.55 | 16.48 | 10.80 |
+| No clasificada | 6 031 | 60.80 | 10.20 | 0.33 |
+
+Las positivas son mayoritarias pero **breves**; las negativas, escasas pero **~2.5× más extensas**. [**Quien queda insatisfecho escribe más**]{.accent}.
+
+## Reputación por tipo de establecimiento
+
+![Top categorías por rating promedio y % de aprobación (vista Gold `stats_categoria`, categorías con >500 reseñas).](docs/figuras/stats_categoria.png){width="82%"}
+
+## Selección del número de clústeres
+
+::: {layout-ncol=2}
+![Silueta y método del codo (WSSSE) para k ∈ [2, 9].](docs/figuras/kmeans_seleccion.png)
+
+::: {}
+- Óptimo: [**k = 7**]{.accent} — silueta **0.6308**, inercia/WSSSE **998 682** (sobre **1.2 M** usuarios).
+- k=8 (0.6200), k=2 (0.6185) y k=6 (0.6116) cercanos ⇒ solución **estable**.
+- Silueta > 0.6 ⇒ clústeres **cohesionados**.
+:::
+:::
+
+## Siete perfiles de revisores accionables
+
+::: {layout-ncol=2}
+![Volumen por clúster y satisfacción vs. esfuerzo textual.](docs/figuras/kmeans_spark.png)
+
+| Perfil | Usuarios | Rating | Acción |
+|:--|--:|--:|:--|
+| Validador masivo | 464 197 | 4.79 | Verificar autenticidad |
+| Promotor genuino | 272 429 | 4.87 | Incentivar reseñas |
+| Recurrente satisfecho | 143 377 | 4.32 | Fidelización |
+| Decepcionado silencioso | 109 003 | 2.16 | Recuperación |
+| Experiencia errática | 75 761 | 3.26 | Revisar consistencia |
+| Crítico detallista | 69 775 | 1.50 | Escalar quejas |
+| Foodie activo | 65 823 | 4.14 | Embajadores |
+:::
+
+## Cinco dimensiones de la experiencia (LDA)
+
+::: {layout-ncol=2}
+![Términos dominantes por tópico (Spark MLlib).](docs/figuras/lda_spark.png)
+
+| Tóp. | Términos | Lectura |
+|:--|:--|:--|
+| 0 | agradable, ambiente, amable, pizza | [Ambiente y trato]{.ok} |
+| 1 | pollo, papas, brasa, pedí | Pollo a la brasa |
+| 2 | precios, precio, platos, calidad | Precio–calidad |
+| 3 | atención, excelente, recomendado | [Atención y recomendación]{.ok} |
+| 4 | servicio, sabor, recomiendo, ceviche | Servicio y sabor |
+:::
+
+Emergen **categorías de comida** (pollo a la brasa, ceviche, pizza) junto a **dimensiones de experiencia** (ambiente, servicio, precio). Log-perplejidad **7.26**.
+
+# 12 · Escalabilidad y demo
+
+## Rendimiento de un sistema distribuido
+
+- Prueba de carga: lotes crecientes (**1k, 2k, 4k…**) midiendo **throughput** de ingesta y **latencia end-to-end** (sello `ingest_ts`).
+- Al ser **distribuido**, el trabajo se reparte entre nodos ⇒ el throughput crece **añadiendo capacidad, sin cambiar el código**.
+- Evidencia preliminar: la calibración de extracción ya mostró escalamiento positivo al duplicar el paralelismo.
+- *Back-pressure* (límite por micro-lote) ⇒ degradación controlada ante ráfagas.
+
+## Aplicación interactiva (Streamlit)
+
+::: {.grid .g2}
+::: {.card} #### 📊 Exploración en vivo
+KPIs del corpus y consultas filtradas con gráficos al momento (Polars sobre parquet).
+:::
+::: {.card} #### 🗺️ Resultados distribuidos
+Galería de figuras de los notebooks Spark/Databricks.
+:::
+::: {.card} #### 👥 Inferencia · Segmentación
+Predice el segmento de un usuario (K-Means).
+:::
+::: {.card} #### 💬 Inferencia · Tópicos
+Clasifica el texto de una reseña en una dimensión (LDA).
+:::
+:::
+
+`streamlit run streamlit/app.py` — modelos locales que aproximan a los distribuidos.
+
+# 13 · Conclusiones
+
+## Conclusiones, limitaciones y trabajo futuro
+
+::: {.grid .g2}
+::: {}
+#### [Conclusiones]{.ok}
+- UGC disperso → base analítica **distribuida y reutilizable** sobre 3.4 M de reseñas.
+- Lambda funcional: histórico + entrante reconciliados en el lakehouse.
+- Hallazgos accionables: territorio, sesgo positivo, minoría crítica, **7 perfiles**, **5 tópicos**.
+:::
+::: {}
+#### [Limitaciones y futuro]{.warn}
+- Sesgo de cobertura de Google Maps; fechas relativas estimadas.
+- Modelos **exploratorios**: faltan pruebas inferenciales y coherencia de tópicos.
+- KMeans sobre 1.2 M; LDA sobre muestra textual por memoria del entorno.
+- Materializar la capa de servicio (tablero + API); integrar más fuentes.
+:::
+:::
+
+## Referencias seleccionadas {.smaller}
+
+::: {.refs}
+1. B. Liu, *Sentiment Analysis and Opinion Mining*, Morgan & Claypool, 2012.
+2. D. Blei, A. Ng, M. Jordan, "Latent Dirichlet Allocation," *JMLR*, vol. 3, 2003.
+3. N. Marz, J. Warren, *Big Data: Principles and Best Practices of Scalable Realtime Data Systems*, Manning, 2015.
+4. M. Zaharia et al., "Apache Spark: A Unified Engine for Big Data Processing," *CACM*, 2016.
+5. J. Kreps, N. Narkhede, J. Rao, "Kafka: A Distributed Messaging System for Log Processing," NetDB, 2011.
+6. M. Armbrust et al., "Delta Lake: ACID Table Storage over Cloud Object Stores," *VLDB*, 2020.
+7. El Comercio, "MINCETUR: el sector gastronómico y su peso en el PBI," 2020.
+:::
+
+**Gracias.** ¿Preguntas?
+
+::: {.callout-note appearance="minimal"}
+Apoyo de IA generativa en redacción, depuración de código y organización de figuras; resultados verificados por los autores. Sin datos confidenciales ni personales.
+:::
