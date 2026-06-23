@@ -21,3 +21,5 @@ numpy>=1.24
 kafka-python>=2.0.2
 python-dotenv>=1.0.0
 pyspark>=3.5   # en Databricks lo provee el runtime; instalar solo para Spark local
+
+quarto #use quarto render presentacion.qmd
